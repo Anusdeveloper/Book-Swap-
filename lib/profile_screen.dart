@@ -6,11 +6,8 @@ import 'dart:io';
 
 // You can replace the below import statements with your actual screen imports
 import 'change_password_screen.dart';
-import 'privacy_settings_screen.dart';
 import 'my_books_screen.dart';
-import 'order_history_screen.dart';
-import 'create_event_screen.dart';
-import 'past_events_screen.dart';
+import 'add_book_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userName;
@@ -243,23 +240,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             },
           ),
           ListTile(
-            title: const Text('Privacy Settings'),
-            leading: const Icon(Icons.privacy_tip),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PrivacySettingsScreen()),
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('Notification Settings'),
-            leading: const Icon(Icons.notifications),
-            onTap: () {
-              // Navigate to Notification Settings screen
-            },
-          ),
-          ListTile(
             title: const Text('Delete Account'),
             leading: const Icon(Icons.delete_forever, color: Colors.red),
             onTap: () async {
@@ -311,52 +291,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('Add New Book'),
             leading: const Icon(Icons.add),
             onTap: () {
+               Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AddBookScreen()),
+              );
               // Navigate to Add New Book screen
             },
           ),
           // Order History Section
 
-          ListTile(
-            title: const Text('Order History'),
-            leading: const Icon(Icons.history),
-            tileColor: Colors.grey.shade200,
-          ),
-          ListTile(
-            title: const Text('Past Orders'),
-            leading: const Icon(Icons.shopping_cart),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => OrderHistoryScreen()),
-              );
-            },
-          ),
-
-          ListTile(
-            title: const Text('Upcoming Events'),
-            leading: const Icon(Icons.event),
-            tileColor: Colors.grey.shade200,
-          ),
-          ListTile(
-            title: const Text('View Past Events'),
-            leading: const Icon(Icons.event_note),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PastEventsScreen()),
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('Create New Event'),
-            leading: const Icon(Icons.add_circle_outline),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CreateEventScreen()),
-              );
-            },
-          ),
+         
         ],
       ),
     );
