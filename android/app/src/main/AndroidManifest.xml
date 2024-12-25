@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="book_swap_app"
+        android:label="book Swap"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

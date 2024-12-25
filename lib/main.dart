@@ -11,6 +11,7 @@ void main() async {
   // Firebase initialization with error handling
   try {
     await Firebase.initializeApp(
+      name:"book-swap-app-f02a1",
       options: DefaultFirebaseOptions.currentPlatform,
     );
     runApp(const BookSwapApp());

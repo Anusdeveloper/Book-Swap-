@@ -3,9 +3,24 @@ import 'add_book_screen.dart';
 import 'profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  /// Open WhatsApp with a pre-filled message
+  void _openWhatsApp(BuildContext context, String whatsappNumber, String itemTitle) async {
+    final message = Uri.encodeComponent('Hi, I am interested in "$itemTitle". Can we connect?');
+    final whatsappUrl = 'https://wa.me/$whatsappNumber?text=$message';
+
+    if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
+      await launchUrl(Uri.parse(whatsappUrl), mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open WhatsApp.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +74,8 @@ class HomeScreen extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            _buildBookList(),
-            _buildNoteList(),
+            _buildBookList(context),
+            _buildNoteList(context),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -78,7 +93,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Build the Book List from the `Books` collection
-  Widget _buildBookList() {
+  Widget _buildBookList(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('Books')
@@ -108,7 +123,7 @@ class HomeScreen extends StatelessWidget {
             itemCount: books.length,
             itemBuilder: (context, index) {
               final book = books[index].data() as Map<String, dynamic>;
-              return _buildBookCard(book);
+              return _buildCard(context, book, true); // true indicates it's a book
             },
           );
         }
@@ -116,101 +131,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Card for displaying a Book
-  Widget _buildBookCard(Map<String, dynamic> book) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            // Book image
-            Container(
-              width: 60,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: book['imageUrl'] != null
-                  ? Image.network(book['imageUrl'], fit: BoxFit.cover)
-                  : const Icon(Icons.book, size: 40, color: Colors.grey),
-            ),
-            const SizedBox(width: 10),
-
-            // Book details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${book['title']}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'By ${book['author']}',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 5),
-
-                  // Grade (optional)
-                  if (book['grade'] != null)
-                    Text(
-                      'Grade: ${book['grade']}',
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  const SizedBox(height: 5),
-
-                  // Price, Rent, or Exchange details
-                  if (book['price'] != null)
-                    Text(
-                      'Price: Rs${book['price']}',
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  else if (book['rent'] != null)
-                    Text(
-                      'Rent: ₹${book['rent']}',
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                  if (book['exchange'] != null && book['exchange'] == true)
-                    const Text(
-                      'Available for Exchange',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Contact button
-            IconButton(
-              onPressed: () {
-                // Handle contact action
-              },
-              icon: const Icon(Icons.contact_phone, color: Colors.black),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// Build the Note List from the `Notes` collection
-  Widget _buildNoteList() {
+  Widget _buildNoteList(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('Notes')
@@ -240,11 +162,86 @@ class HomeScreen extends StatelessWidget {
             itemCount: notes.length,
             itemBuilder: (context, index) {
               final note = notes[index].data() as Map<String, dynamic>;
-              return _buildBookCard(note); // Reuse book card for notes
+              return _buildCard(context, note, false); // false indicates it's a note
             },
           );
         }
       },
+    );
+  }
+
+  /// Card for displaying Books or Notes
+  Widget _buildCard(BuildContext context, Map<String, dynamic> item, bool isBook) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            // Item image
+            Container(
+              width: 60,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: item['imageUrl'] != null
+                  ? Image.network(item['imageUrl'], fit: BoxFit.cover)
+                  : const Icon(Icons.insert_drive_file, size: 40, color: Colors.grey),
+            ),
+            const SizedBox(width: 10),
+
+            // Item details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${item['title']}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'By ${item['author']}',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 5),
+
+                  if (isBook && item['price'] != null)
+                    Text(
+                      'Price: RS:${item['price']}',
+                      style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                    ),
+                ],
+              ),
+            ),
+
+            // WhatsApp button
+            IconButton(
+              onPressed: () {
+                final whatsappNumber = item['whatsappNumber'];
+                if (whatsappNumber != null && whatsappNumber.isNotEmpty) {
+                  _openWhatsApp(context, whatsappNumber, item['title']);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('WhatsApp number not available.')),
+                  );
+                }
+              },
+              icon: Image.asset(
+                'assets/icons/whatsapp.png', // Add your WhatsApp icon here
+                width: 100.0,
+                height: 100.0,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

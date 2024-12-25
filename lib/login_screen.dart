@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.yellow, // Primary color
+        backgroundColor: Colors.yellow,
         title: const Text('Login', style: TextStyle(color: Colors.black)),
       ),
       body: Padding(
@@ -42,6 +42,16 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Logo at the center
+            SizedBox(
+           
+              height: 100,
+              child: Image.asset(
+                'assets/login/logo.png', // Path to your logo image
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 32), // Spacing between logo and text fields
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
@@ -64,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ElevatedButton(
               onPressed: login,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow, // Corrected here
+                backgroundColor: Colors.yellow,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),

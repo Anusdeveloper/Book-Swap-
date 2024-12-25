@@ -1,13 +1,13 @@
 name: book_swap_app
 description: "A new Flutter project."
-# The following line prevents the package from being accidentally published to
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# Prevent accidental publication to pub.dev
+publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.4
+  sdk: ">=3.5.4 <4.0.0"
 
 dependencies:
   flutter:
@@ -15,23 +15,25 @@ dependencies:
   firebase_core: ^2.3.0
   firebase_auth: ^4.16.0
   cloud_firestore: ^4.3.3
-  firebase_storage: ^11.0.0 # Fixed alignment
-  image_picker: ^0.8.6+3  # Image picker package for profile picture upload
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  firebase_storage: ^11.0.0
+  image_picker: ^0.8.6+3
+  url_launcher: ^6.0.20
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices.
+  flutter_launcher_icons: ^0.14.2
   flutter_lints: ^4.0.0
+
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/launcher/icon.png"
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/logo.png 
+    - assets/images/logo.png
+    - assets/icons/whatsapp.png
+    - assets/login/logo.png

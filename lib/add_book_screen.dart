@@ -16,6 +16,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
   final TextEditingController _authorController = TextEditingController();
   final TextEditingController _classController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _whatsappController = TextEditingController();
 
   String _category = 'Book'; // Default category
   String _transactionType = 'Sell'; // Default transaction type
@@ -29,10 +30,19 @@ class _AddBookScreenState extends State<AddBookScreen> {
     final String author = _authorController.text.trim();
     final String classStandard = _classController.text.trim();
     final String priceText = _priceController.text.trim();
+    final String whatsappNumber = _whatsappController.text.trim();
 
     if (title.isEmpty || author.isEmpty || (_category == 'Note' && classStandard.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields.')),
+      );
+      return;
+    }
+
+    // Validate WhatsApp number
+    if (whatsappNumber.isEmpty || !RegExp(r'^\+\d{10,15}$').hasMatch(whatsappNumber)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid WhatsApp number with country code.')),
       );
       return;
     }
@@ -88,6 +98,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
         'category': _category,
         'transactionType': _transactionType,
         'timestamp': FieldValue.serverTimestamp(),
+        'whatsappNumber': whatsappNumber, // WhatsApp number added here
         if (_category == 'Note') 'class': classStandard,
         if (_transactionType != 'Exchange' && price != null) 'price': price,
         if (imageUrl != null) 'imageUrl': imageUrl,
@@ -135,6 +146,7 @@ class _AddBookScreenState extends State<AddBookScreen> {
     _authorController.clear();
     _classController.clear();
     _priceController.clear();
+    _whatsappController.clear(); // Clear WhatsApp field
     setState(() {
       _category = 'Book';
       _transactionType = 'Sell';
@@ -179,6 +191,15 @@ class _AddBookScreenState extends State<AddBookScreen> {
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(labelText: 'Price (INR)', border: OutlineInputBorder()),
                       ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _whatsappController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'WhatsApp Number (with country code)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     if (_selectedImage != null)
                       Image.file(_selectedImage!, height: 150, width: double.infinity, fit: BoxFit.cover),

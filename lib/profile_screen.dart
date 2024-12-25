@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 // You can replace the below import statements with your actual screen imports
-import 'change_password_screen.dart'; // Example screen for changing password
-import 'privacy_settings_screen.dart'; // Example screen for privacy settings
-import 'my_books_screen.dart'; // Example screen for the user's books
-import 'order_history_screen.dart'; // Example screen for order history
-import 'create_event_screen.dart'; // Example screen for creating new event
-import 'past_events_screen.dart'; // Example screen for past events
-import 'language_settings_screen.dart'; // Example screen for language settings
-import 'feedback_support_screen.dart'; // Example screen for feedback and support
-import 'terms_of_service_screen.dart'; // Example screen for terms of service
-import 'privacy_policy_screen.dart'; // Example screen for privacy policy
+import 'change_password_screen.dart';
+import 'privacy_settings_screen.dart';
+import 'my_books_screen.dart';
+import 'order_history_screen.dart';
+import 'create_event_screen.dart';
+import 'past_events_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String userName;  // The user name passed from login or authentication
-  final String userEmail; // The user email passed from login or authentication
+  final String userName;
+  final String userEmail;
 
   const ProfileScreen({
     super.key,
@@ -33,24 +31,74 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   late AnimationController _controller;
   late Animation<double> _animation;
 
-  // Method to pick an image from the user's device
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery); // Choose gallery or camera
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
       setState(() {
-        _profileImage = File(image.path); // Update the profile image
+        _profileImage = File(image.path);
       });
     }
   }
 
-  // Logout function
   Future<void> _logout() async {
-    // Perform logout action (e.g., Firebase sign-out)
-    // Example: await FirebaseAuth.instance.signOut();
-    print('Logged out');
-    Navigator.pushReplacementNamed(context, '/login'); // Navigate to the login screen after logout
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      
+      if (user != null) {
+        // Delete user data from Firestore
+        await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .delete();
+
+        // Delete user books
+        await FirebaseFirestore.instance
+          .collection('books')
+          .where('userId', isEqualTo: user.uid)
+          .get()
+          .then((snapshot) {
+            for (DocumentSnapshot doc in snapshot.docs) {
+              doc.reference.delete();
+            }
+          });
+
+        // Delete user events
+        await FirebaseFirestore.instance
+          .collection('events')
+          .where('userId', isEqualTo: user.uid)
+          .get()
+          .then((snapshot) {
+            for (DocumentSnapshot doc in snapshot.docs) {
+              doc.reference.delete();
+            }
+          });
+
+        // Delete user authentication
+        await user.delete();
+        
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'Failed to delete account'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -68,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
   @override
   void dispose() {
-    _controller.dispose(); // Clean up the controller when done
+    _controller.dispose();
     super.dispose();
   }
 
@@ -77,28 +125,26 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Profile'),
-        backgroundColor: Colors.yellow,  // Main AppBar Color
+        backgroundColor: Colors.yellow,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // Go back to the previous screen
+            Navigator.pop(context);
           },
         ),
         actions: [
-          // Logout Animated Icon in the top-right corner
           MouseRegion(
             onEnter: (_) {
-              _controller.forward(); // Start the animation when the mouse enters
+              _controller.forward();
             },
             onExit: (_) {
-              _controller.reverse(); // Reverse the animation when the mouse exits
+              _controller.reverse();
             },
             child: ScaleTransition(
               scale: _animation,
               child: IconButton(
                 icon: const Icon(Icons.logout),
                 onPressed: () async {
-                  // Confirm logout with the user
                   final shouldLogout = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -118,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   );
 
                   if (shouldLogout == true) {
-                    _logout(); // Call the logout function
+                    await _logout();
                   }
                 },
               ),
@@ -128,19 +174,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       ),
       body: ListView(
         children: [
-          // Header Section: Profile Picture, Name, and Status
           Container(
             padding: const EdgeInsets.all(16.0),
-            color: Colors.blue.shade50, // Use Colors.blue.shade50 dynamically, no `const` here
+            color: Colors.blue.shade50,
             child: Column(
               children: [
                 GestureDetector(
-                  onTap: _pickImage, // Allow the user to tap to change profile picture
+                  onTap: _pickImage,
                   child: CircleAvatar(
                     radius: 50,
                     backgroundImage: _profileImage == null
-                        ? const NetworkImage('https://example.com/default-avatar.jpg') // Default profile image
-                        : FileImage(_profileImage!) as ImageProvider, // Display picked image
+                        ? const NetworkImage('https://example.com/default-avatar.jpg')
+                        : FileImage(_profileImage!) as ImageProvider,
                     child: _profileImage == null
                         ? const Icon(Icons.camera_alt, size: 30, color: Colors.white)
                         : null,
@@ -148,19 +193,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  widget.userName,  // Use the user name from the passed parameters
+                  widget.userName,
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  widget.userEmail,  // Use the user email from the passed parameters
+                  widget.userEmail,
                   style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
                 ),
               ],
             ),
           ),
 
-          // Personal Information Section
           ListTile(
             title: const Text('Personal Information'),
             leading: const Icon(Icons.person),
@@ -183,7 +227,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             leading: Icon(Icons.info),
           ),
 
-          // Account Settings Section
           ListTile(
             title: const Text('Account Settings'),
             leading: const Icon(Icons.settings),
@@ -193,7 +236,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('Change Password'),
             leading: const Icon(Icons.lock),
             onTap: () {
-              // Navigate to the Change Password screen
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
@@ -204,7 +246,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('Privacy Settings'),
             leading: const Icon(Icons.privacy_tip),
             onTap: () {
-              // Navigate to Privacy Settings screen
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const PrivacySettingsScreen()),
@@ -215,18 +256,42 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('Notification Settings'),
             leading: const Icon(Icons.notifications),
             onTap: () {
-              // Navigate to Notification Settings screen (optional, you can add it)
+              // Navigate to Notification Settings screen
             },
           ),
           ListTile(
             title: const Text('Delete Account'),
-            leading: const Icon(Icons.delete_forever),
-            onTap: () {
-              // Handle account deletion
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            onTap: () async {
+              final shouldDelete = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete Account'),
+                  content: const Text(
+                    'Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (shouldDelete == true) {
+                await _deleteAccount();
+              }
             },
           ),
 
-          // Book Collection Section
           ListTile(
             title: const Text('Book Collection'),
             leading: const Icon(Icons.book),
@@ -236,7 +301,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('My Books'),
             leading: const Icon(Icons.library_books),
             onTap: () {
-              // Navigate to the user's book collection screen
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => MyBooksScreen()),
@@ -250,8 +314,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               // Navigate to Add New Book screen
             },
           ),
-
           // Order History Section
+
           ListTile(
             title: const Text('Order History'),
             leading: const Icon(Icons.history),
@@ -261,7 +325,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('Past Orders'),
             leading: const Icon(Icons.shopping_cart),
             onTap: () {
-              // Navigate to Order History screen
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => OrderHistoryScreen()),
@@ -269,7 +332,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             },
           ),
 
-          // Events Section
           ListTile(
             title: const Text('Upcoming Events'),
             leading: const Icon(Icons.event),
@@ -279,7 +341,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('View Past Events'),
             leading: const Icon(Icons.event_note),
             onTap: () {
-              // Navigate to Past Events screen
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => PastEventsScreen()),
@@ -290,68 +351,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             title: const Text('Create New Event'),
             leading: const Icon(Icons.add_circle_outline),
             onTap: () {
-              // Navigate to Create New Event screen
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => CreateEventScreen()),
               );
             },
           ),
-
-          // Additional Features
-          const Divider(),
-          SwitchListTile(
-            title: const Text('Dark Mode'),
-            value: true, // Replace with actual dark mode state
-            onChanged: (bool value) {
-              // Toggle Dark Mode
-            },
-          ),
-          ListTile(
-            title: const Text('Language Settings'),
-            leading: const Icon(Icons.language),
-            onTap: () {
-              // Navigate to Language Settings screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LanguageSettingsScreen()),
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('Feedback & Support'),
-            leading: const Icon(Icons.feedback),
-            onTap: () {
-              // Navigate to Feedback & Support screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => FeedbackSupportScreen()),
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('Terms of Service'),
-            leading: const Icon(Icons.description),
-            onTap: () {
-              // Navigate to Terms of Service screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => TermsOfServiceScreen()),
-              );
-            },
-          ),
-          ListTile(
-            title: const Text('Privacy Policy'),
-            leading: const Icon(Icons.privacy_tip),
-            onTap: () {
-              // Navigate to Privacy Policy screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()),
-              );
-            },
-          ),
-          const Divider(),
         ],
       ),
     );
